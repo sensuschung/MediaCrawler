@@ -44,7 +44,7 @@ class CrawlerFactory:
         return crawler_class()
 
 
-async def main():
+async def main(type="search",keywords=None,id=None):
     # parse cmd
     await cmd_arg.parse_cmd()
 
@@ -53,16 +53,17 @@ async def main():
         await db.init_db()
 
     crawler = CrawlerFactory.create_crawler(platform=config.PLATFORM)
-    await crawler.start()
+    await crawler.start(type,keywords,id)
 
     if config.SAVE_DATA_OPTION == "db":
         await db.close()
 
-    
-
-if __name__ == '__main__':
+def run_main_task(type: str,keywords:str, id: list):
     try:
-        # asyncio.run(main())
-        asyncio.get_event_loop().run_until_complete(main())
+        result = asyncio.get_event_loop().run_until_complete(main(type=type, keywords= keywords,id=id))
+        return result
     except KeyboardInterrupt:
         sys.exit()
+    
+if __name__ == '__main__':
+    run_main_task("creator",None,["5baae74d1c5d630001e33145"])

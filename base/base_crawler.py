@@ -17,7 +17,7 @@ from playwright.async_api import BrowserContext, BrowserType
 
 class AbstractCrawler(ABC):
     @abstractmethod
-    async def start(self):
+    async def start(self,type,keywords,id):
         """
         start crawler
         """

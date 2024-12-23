@@ -45,7 +45,7 @@ class XiaoHongShuCrawler(AbstractCrawler):
         # self.user_agent = utils.get_user_agent()
         self.user_agent = config.UA if config.UA else "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 
-    async def start(self) -> None:
+    async def start(self,type,keywords,id) -> None:
         playwright_proxy_format, httpx_proxy_format = None, None
         if config.ENABLE_IP_PROXY:
             ip_proxy_pool = await create_ip_pool(
@@ -93,22 +93,23 @@ class XiaoHongShuCrawler(AbstractCrawler):
                     browser_context=self.browser_context
                 )
 
-            crawler_type_var.set(config.CRAWLER_TYPE)
-            if config.CRAWLER_TYPE == "search":
+            # crawler_type_var.set(config.CRAWLER_TYPE)
+            crawler_type_var.set(type)
+            if type == "search":
                 # Search for notes and retrieve their comment information.
-                await self.search()
-            elif config.CRAWLER_TYPE == "detail":
+                await self.search(keywords)
+            elif type == "detail":
                 # Get the information and comments of the specified post
                 await self.get_specified_notes()
-            elif config.CRAWLER_TYPE == "creator":
+            elif type == "creator":
                 # Get creator's information and their notes and comments
-                await self.get_creators_and_notes()
+                await self.get_creators_and_notes(id)
             else:
                 pass
 
             utils.logger.info("[XiaoHongShuCrawler.start] Xhs Crawler finished ...")
 
-    async def search(self) -> None:
+    async def search(self,keywords) -> None:
         """Search for notes and retrieve their comment information."""
         utils.logger.info(
             "[XiaoHongShuCrawler.search] Begin search xiaohongshu keywords"
@@ -117,7 +118,11 @@ class XiaoHongShuCrawler(AbstractCrawler):
         if config.CRAWLER_MAX_NOTES_COUNT < xhs_limit_count:
             config.CRAWLER_MAX_NOTES_COUNT = xhs_limit_count
         start_page = config.START_PAGE
-        for keyword in config.KEYWORDS.split(","):
+        if keywords:
+            keywords_list = keywords.split(",")
+        else:
+            keywords_list = config.KEYWORDS.split(",")
+        for keyword in keywords_list:
             source_keyword_var.set(keyword)
             utils.logger.info(
                 f"[XiaoHongShuCrawler.search] Current search keyword: {keyword}"
@@ -149,7 +154,8 @@ class XiaoHongShuCrawler(AbstractCrawler):
                         ),
                     )
                     utils.logger.info(
-                        f"[XiaoHongShuCrawler.search] Search notes res:{notes_res}"
+                        # f"[XiaoHongShuCrawler.search] Search notes res:{notes_res}"
+                        f"[XiaoHongShuCrawler.search] Search notes res"
                     )
                     if not notes_res or not notes_res.get("has_more", False):
                         utils.logger.info("No more content!")
@@ -174,7 +180,7 @@ class XiaoHongShuCrawler(AbstractCrawler):
                             xsec_tokens.append(note_detail.get("xsec_token"))
                     page += 1
                     utils.logger.info(
-                        f"[XiaoHongShuCrawler.search] Note details: {note_details}"
+                        f"[XiaoHongShuCrawler.search] Update Note details" # : {note_details}
                     )
                     await self.batch_get_note_comments(note_ids, xsec_tokens)
                 except DataFetchError:
@@ -183,12 +189,16 @@ class XiaoHongShuCrawler(AbstractCrawler):
                     )
                     break
 
-    async def get_creators_and_notes(self) -> None:
+    async def get_creators_and_notes(self,id) -> None:
         """Get creator's notes and retrieve their comment information."""
         utils.logger.info(
             "[XiaoHongShuCrawler.get_creators_and_notes] Begin get xiaohongshu creators"
         )
-        for user_id in config.XHS_CREATOR_ID_LIST:
+        if id:
+            id_list = id
+        else:
+            id_list = config.XHS_CREATOR_ID_LIST
+        for user_id in id_list:
             # get creator detail info from web html content
             createor_info: Dict = await self.xhs_client.get_creator_info(
                 user_id=user_id

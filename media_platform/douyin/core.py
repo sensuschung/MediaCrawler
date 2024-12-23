@@ -39,7 +39,7 @@ class DouYinCrawler(AbstractCrawler):
     def __init__(self) -> None:
         self.index_url = "https://www.douyin.com"
 
-    async def start(self) -> None:
+    async def start(self,type,keywords,id) -> None:
         playwright_proxy_format, httpx_proxy_format = None, None
         if config.ENABLE_IP_PROXY:
             ip_proxy_pool = await create_ip_pool(config.IP_PROXY_POOL_COUNT, enable_validate_ip=True)

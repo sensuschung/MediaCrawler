@@ -11,15 +11,15 @@
 
 # 基础配置
 PLATFORM = "xhs"
-KEYWORDS = "编程副业,编程兼职"  # 关键词搜索配置，以英文逗号分隔
-LOGIN_TYPE = "qrcode"  # qrcode or phone or cookie
-COOKIES = ""
+KEYWORDS = "南京,美食"  # 关键词搜索配置，以英文逗号分隔
+LOGIN_TYPE = "cookie"  # qrcode or phone or cookie
+COOKIES = "abRequestId=ffe1a01b-6e54-56fb-872f-f1426b814c11; xsecappid=xhs-pc-web; a1=193d49d10ca2t7n42bqx7gd9exwyai4ktfxdz0t7j50000413772; webId=0e27f562e1e6826d14bc1dfded364005; gid=yjqf4jfyqS9Syjqf4jfy8i89S0J9WI4JDACWCWVkfjdCEf28v034Tu8884yqWWJ8q0y8YWDJ; web_session=040069b3b6996a34e8c86d3854354b0ae45b0c; acw_tc=0a00d7db17345220291936313e10d64203a5e3aa9ae2dba5c33f3e6b5aff2e; webBuild=4.47.1; unread={%22ub%22:%226742f793000000000800528e%22%2C%22ue%22:%22674d7b310000000002038888%22%2C%22uc%22:29}; websectiga=f47eda31ec99545da40c2f731f0630efd2b0959e1dd10d5fedac3dce0bd1e04d; sec_poison_id=0fdc6c6d-efda-4edf-82ba-64053e0460b7"
 # 具体值参见media_platform.xxx.field下的枚举值，暂时只支持小红书
 SORT_TYPE = "popularity_descending"
 # 具体值参见media_platform.xxx.field下的枚举值，暂时只支持抖音
 PUBLISH_TIME_TYPE = 0
 CRAWLER_TYPE = (
-    "search"  # 爬取类型，search(关键词搜索) | detail(帖子详情)| creator(创作者主页数据)
+    "creator"  # 爬取类型，search(关键词搜索) | detail(帖子详情)| creator(创作者主页数据)
 )
 # 自定义User Agent（暂时仅对XHS有效）
 UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0'
@@ -40,7 +40,7 @@ IP_PROXY_PROVIDER_NAME = "kuaidaili"
 # 设置False会打开一个浏览器
 # 小红书如果一直扫码登录不通过，打开浏览器手动过一下滑动验证码
 # 抖音如果一直提示失败，打开浏览器看下是否扫码登录之后出现了手机号验证，如果出现了手动过一下再试。
-HEADLESS = False
+HEADLESS = True
 
 # 是否保存登录状态
 SAVE_LOGIN_STATE = True
@@ -55,7 +55,7 @@ USER_DATA_DIR = "%s_user_data_dir"  # %s will be replaced by platform name
 START_PAGE = 1
 
 # 爬取视频/帖子的数量控制
-CRAWLER_MAX_NOTES_COUNT = 200
+CRAWLER_MAX_NOTES_COUNT = 10
 
 # 并发爬虫数量控制
 MAX_CONCURRENCY_NUM = 1
@@ -64,7 +64,7 @@ MAX_CONCURRENCY_NUM = 1
 ENABLE_GET_IMAGES = False
 
 # 是否开启爬评论模式, 默认开启爬评论
-ENABLE_GET_COMMENTS = True
+ENABLE_GET_COMMENTS = False 
 
 # 爬取一级评论的数量控制(单视频/帖子)
 CRAWLER_MAX_COMMENTS_COUNT_SINGLENOTES = 10

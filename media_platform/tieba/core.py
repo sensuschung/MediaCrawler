@@ -41,7 +41,7 @@ class TieBaCrawler(AbstractCrawler):
         self.index_url = "https://tieba.baidu.com"
         self.user_agent = utils.get_user_agent()
 
-    async def start(self) -> None:
+    async def start(self, type,keywords,id) -> None:
         """
         Start the crawler
         Returns:
