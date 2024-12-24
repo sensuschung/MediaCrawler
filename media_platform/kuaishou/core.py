@@ -69,33 +69,38 @@ class KuaishouCrawler(AbstractCrawler):
                     login_phone=httpx_proxy_format,
                     browser_context=self.browser_context,
                     context_page=self.context_page,
-                    cookie_str=config.COOKIES
+                    cookie_str=config.COOKIES["kuaishou"],
                 )
                 await login_obj.begin()
                 await self.ks_client.update_cookies(browser_context=self.browser_context)
 
-            crawler_type_var.set(config.CRAWLER_TYPE)
+            if not type:
+                crawler_type_var.set(config.CRAWLER_TYPE)
+            else:
+                crawler_type_var.set(type)
             if config.CRAWLER_TYPE == "search":
                 # Search for videos and retrieve their comment information.
-                await self.search()
+                await self.search(keywords)
             elif config.CRAWLER_TYPE == "detail":
                 # Get the information and comments of the specified post
                 await self.get_specified_videos()
             elif config.CRAWLER_TYPE == "creator":
                 # Get creator's information and their videos and comments
-                await self.get_creators_and_videos()
+                await self.get_creators_and_videos(id)
             else:
                 pass
 
             utils.logger.info("[KuaishouCrawler.start] Kuaishou Crawler finished ...")
 
-    async def search(self):
+    async def search(self, keywords: str):
         utils.logger.info("[KuaishouCrawler.search] Begin search kuaishou keywords")
         ks_limit_count = 20  # kuaishou limit page fixed value
         if config.CRAWLER_MAX_NOTES_COUNT < ks_limit_count:
             config.CRAWLER_MAX_NOTES_COUNT = ks_limit_count
         start_page = config.START_PAGE
-        for keyword in config.KEYWORDS.split(","):
+        if not keywords:
+            keywords = config.KEYWORDS
+        for keyword in keywords.split(","):
             source_keyword_var.set(keyword)
             utils.logger.info(f"[KuaishouCrawler.search] Current search keyword: {keyword}")
             page = 1
@@ -262,10 +267,12 @@ class KuaishouCrawler(AbstractCrawler):
             )
             return browser_context
 
-    async def get_creators_and_videos(self) -> None:
+    async def get_creators_and_videos(self,ids) -> None:
         """Get creator's videos and retrieve their comment information."""
         utils.logger.info("[KuaiShouCrawler.get_creators_and_videos] Begin get kuaishou creators")
-        for user_id in config.KS_CREATOR_ID_LIST:
+        if not ids:
+            ids = config.KS_CREATOR_ID_LIST
+        for user_id in ids:
             # get creator detail info from web html content
             createor_info: Dict = await self.ks_client.get_creator_info(user_id=user_id)
             if createor_info:

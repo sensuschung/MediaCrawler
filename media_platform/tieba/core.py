@@ -60,23 +60,26 @@ class TieBaCrawler(AbstractCrawler):
             ip_pool=ip_proxy_pool,
             default_ip_proxy=httpx_proxy_format,
         )
-        crawler_type_var.set(config.CRAWLER_TYPE)
+        if type:
+            crawler_type_var.set(type)
+        else:
+            crawler_type_var.set(config.CRAWLER_TYPE)
         if config.CRAWLER_TYPE == "search":
             # Search for notes and retrieve their comment information.
-            await self.search()
-            await self.get_specified_tieba_notes()
+            await self.search(keywords)
+            # await self.get_specified_tieba_notes()
         elif config.CRAWLER_TYPE == "detail":
             # Get the information and comments of the specified post
             await self.get_specified_notes()
         elif config.CRAWLER_TYPE == "creator":
             # Get creator's information and their notes and comments
-            await self.get_creators_and_notes()
+            await self.get_creators_and_notes(id)
         else:
             pass
 
         utils.logger.info("[BaiduTieBaCrawler.start] Tieba Crawler finished ...")
 
-    async def search(self) -> None:
+    async def search(self,keywords:str) -> None:
         """
         Search for notes and retrieve their comment information.
         Returns:
@@ -87,7 +90,9 @@ class TieBaCrawler(AbstractCrawler):
         if config.CRAWLER_MAX_NOTES_COUNT < tieba_limit_count:
             config.CRAWLER_MAX_NOTES_COUNT = tieba_limit_count
         start_page = config.START_PAGE
-        for keyword in config.KEYWORDS.split(","):
+        if not keywords:
+            keywords = config.KEYWORDS
+        for keyword in keywords.split(","):
             source_keyword_var.set(keyword)
             utils.logger.info(f"[BaiduTieBaCrawler.search] Current search keyword: {keyword}")
             page = 1
@@ -230,14 +235,16 @@ class TieBaCrawler(AbstractCrawler):
                 max_count=config.CRAWLER_MAX_COMMENTS_COUNT_SINGLENOTES
             )
 
-    async def get_creators_and_notes(self) -> None:
+    async def get_creators_and_notes(self,urls) -> None:
         """
         Get creator's information and their notes and comments
         Returns:
 
         """
         utils.logger.info("[WeiboCrawler.get_creators_and_notes] Begin get weibo creators")
-        for creator_url in config.TIEBA_CREATOR_URL_LIST:
+        if not urls:
+            urls = config.TIEBA_CREATOR_URL_LIST
+        for creator_url in urls:
             creator_info: TiebaCreator = await self.tieba_client.get_creator_info_by_url(creator_url=creator_url)
             if creator_info:
                 utils.logger.info(f"[WeiboCrawler.get_creators_and_notes] creator info: {creator_info}")

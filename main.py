@@ -44,7 +44,7 @@ class CrawlerFactory:
         return crawler_class()
 
 
-async def main(type="search",keywords=None,id=None):
+async def main(platform:str,type="search",keywords=None,id=None):
     # parse cmd
     await cmd_arg.parse_cmd()
 
@@ -52,18 +52,27 @@ async def main(type="search",keywords=None,id=None):
     if config.SAVE_DATA_OPTION == "db":
         await db.init_db()
 
-    crawler = CrawlerFactory.create_crawler(platform=config.PLATFORM)
+    if platform not in ["xhs","dy","ks","bili","wb","tieba","zhihu"]:
+         platform = config.PLATFORM
+    crawler = CrawlerFactory.create_crawler(platform=platform)
     await crawler.start(type,keywords,id)
 
     if config.SAVE_DATA_OPTION == "db":
         await db.close()
 
-def run_main_task(type: str,keywords:str, id: list):
+def run_main_task(platform:str,type: str,keywords:str, id: list):
     try:
-        result = asyncio.get_event_loop().run_until_complete(main(type=type, keywords= keywords,id=id))
+        result = asyncio.get_event_loop().run_until_complete(main(platform=platform,type=type, keywords= keywords,id=id))
         return result
     except KeyboardInterrupt:
         sys.exit()
     
 if __name__ == '__main__':
-    run_main_task("creator",None,["5baae74d1c5d630001e33145"])
+    run_main_task("xhs","search","明日方舟",None)
+    # search "keyword1" None 
+    # creator None ["xxx","xxx"]
+
+    # paltform para: xhs dy ks bili wb tieba zhihu
+    # type para: search creator
+    # keywords para: str
+    # id para: list() ps. zhihu-主页url 贴吧-url

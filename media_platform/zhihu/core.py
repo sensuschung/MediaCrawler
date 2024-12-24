@@ -79,7 +79,7 @@ class ZhihuCrawler(AbstractCrawler):
                     login_phone="",  # input your phone number
                     browser_context=self.browser_context,
                     context_page=self.context_page,
-                    cookie_str=config.COOKIES
+                    cookie_str=config.COOKIES["zhihu"]
                 )
                 await login_obj.begin()
                 await self.zhihu_client.update_cookies(browser_context=self.browser_context)
@@ -90,29 +90,36 @@ class ZhihuCrawler(AbstractCrawler):
             await asyncio.sleep(5)
             await self.zhihu_client.update_cookies(browser_context=self.browser_context)
 
-            crawler_type_var.set(config.CRAWLER_TYPE)
-            if config.CRAWLER_TYPE == "search":
+            if type:
+                crawler_type_var.set(type)
+            else:
+                type = config.CRAWLER_TYPE
+                crawler_type_var.set(config.CRAWLER_TYPE)
+            print(type)
+            if type == "search":
                 # Search for notes and retrieve their comment information.
-                await self.search()
-            elif config.CRAWLER_TYPE == "detail":
+                await self.search(keywords)
+            elif type == "detail":
                 # Get the information and comments of the specified post
                 raise NotImplementedError
-            elif config.CRAWLER_TYPE == "creator":
+            elif type == "creator":
                 # Get creator's information and their notes and comments
-                await self.get_creators_and_notes()
+                await self.get_creators_and_notes(id)
             else:
                 pass
 
             utils.logger.info("[ZhihuCrawler.start] Zhihu Crawler finished ...")
 
-    async def search(self) -> None:
+    async def search(self,keywords:str) -> None:
         """Search for notes and retrieve their comment information."""
         utils.logger.info("[ZhihuCrawler.search] Begin search zhihu keywords")
         zhihu_limit_count = 20  # zhihu limit page fixed value
         if config.CRAWLER_MAX_NOTES_COUNT < zhihu_limit_count:
             config.CRAWLER_MAX_NOTES_COUNT = zhihu_limit_count
         start_page = config.START_PAGE
-        for keyword in config.KEYWORDS.split(","):
+        if not keywords:
+            keywords = config.KEYWORDS
+        for keyword in keywords.split(","):
             source_keyword_var.set(keyword)
             utils.logger.info(f"[ZhihuCrawler.search] Current search keyword: {keyword}")
             page = 1
@@ -128,7 +135,7 @@ class ZhihuCrawler(AbstractCrawler):
                         keyword=keyword,
                         page=page,
                     )
-                    utils.logger.info(f"[ZhihuCrawler.search] Search contents :{content_list}")
+                    # utils.logger.info(f"[ZhihuCrawler.search] Search contents :{content_list}")
                     if not content_list:
                         utils.logger.info("No more content!")
                         break
@@ -173,21 +180,23 @@ class ZhihuCrawler(AbstractCrawler):
 
         """
         async with semaphore:
-            utils.logger.info(f"[ZhihuCrawler.get_comments] Begin get note id comments {content_item.content_id}")
+            # utils.logger.info(f"[ZhihuCrawler.get_comments] Begin get note id comments {content_item.content_id}")
             await self.zhihu_client.get_note_all_comments(
                 content=content_item,
                 crawl_interval=random.random(),
                 callback=zhihu_store.batch_update_zhihu_note_comments
             )
 
-    async def get_creators_and_notes(self) -> None:
+    async def get_creators_and_notes(self,urls) -> None:
         """
         Get creator's information and their notes and comments
         Returns:
 
         """
         utils.logger.info("[ZhihuCrawler.get_creators_and_notes] Begin get xiaohongshu creators")
-        for user_link in config.ZHIHU_CREATOR_URL_LIST:
+        if not urls:
+            urls = config.ZHIHU_CREATOR_URL_LIST
+        for user_link in urls:
             utils.logger.info(f"[ZhihuCrawler.get_creators_and_notes] Begin get creator {user_link}")
             user_url_token = user_link.split("/")[-1]
             # get creator detail info from web html content
@@ -210,11 +219,11 @@ class ZhihuCrawler(AbstractCrawler):
 
 
             # Get all articles of the creator's contents
-            # all_content_list = await self.zhihu_client.get_all_articles_by_creator(
-            #     creator=createor_info,
-            #     crawl_interval=random.random(),
-            #     callback=zhihu_store.batch_update_zhihu_contents
-            # )
+            all_content_list = await self.zhihu_client.get_all_articles_by_creator(
+                creator=createor_info,
+                crawl_interval=random.random(),
+                callback=zhihu_store.batch_update_zhihu_contents
+            )
 
             # Get all videos of the creator's contents
             # all_content_list = await self.zhihu_client.get_all_videos_by_creator(

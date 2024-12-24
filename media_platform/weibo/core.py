@@ -75,10 +75,10 @@ class WeiboCrawler(AbstractCrawler):
             if not await self.wb_client.pong():
                 login_obj = WeiboLogin(
                     login_type=config.LOGIN_TYPE,
-                    login_phone="",  # your phone number
+                    login_phone="15957572916",  # your phone number
                     browser_context=self.browser_context,
                     context_page=self.context_page,
-                    cookie_str=config.COOKIES
+                    cookie_str=config.COOKIES["weibo"]
                 )
                 await login_obj.begin()
 
@@ -88,21 +88,24 @@ class WeiboCrawler(AbstractCrawler):
                 await asyncio.sleep(2)
                 await self.wb_client.update_cookies(browser_context=self.browser_context)
 
-            crawler_type_var.set(config.CRAWLER_TYPE)
+            if type:
+                crawler_type_var.set(type)
+            else:
+                crawler_type_var.set(config.CRAWLER_TYPE)
             if config.CRAWLER_TYPE == "search":
                 # Search for video and retrieve their comment information.
-                await self.search()
+                await self.search(keywords)
             elif config.CRAWLER_TYPE == "detail":
                 # Get the information and comments of the specified post
                 await self.get_specified_notes()
             elif config.CRAWLER_TYPE == "creator":
                 # Get creator's information and their notes and comments
-                await self.get_creators_and_notes()
+                await self.get_creators_and_notes(id)
             else:
                 pass
             utils.logger.info("[WeiboCrawler.start] Weibo Crawler finished ...")
 
-    async def search(self):
+    async def search(self,keywords):
         """
         search weibo note with keywords
         :return:
@@ -112,7 +115,9 @@ class WeiboCrawler(AbstractCrawler):
         if config.CRAWLER_MAX_NOTES_COUNT < weibo_limit_count:
             config.CRAWLER_MAX_NOTES_COUNT = weibo_limit_count
         start_page = config.START_PAGE
-        for keyword in config.KEYWORDS.split(","):
+        if not keywords:
+            keywords = config.KEYWORDS
+        for keyword in keywords.split(","):
             source_keyword_var.set(keyword)
             utils.logger.info(f"[WeiboCrawler.search] Current search keyword: {keyword}")
             page = 1
@@ -237,14 +242,16 @@ class WeiboCrawler(AbstractCrawler):
                 await weibo_store.update_weibo_note_image(pic["pid"], content, extension_file_name)
 
 
-    async def get_creators_and_notes(self) -> None:
+    async def get_creators_and_notes(self,ids) -> None:
         """
         Get creator's information and their notes and comments
         Returns:
 
         """
         utils.logger.info("[WeiboCrawler.get_creators_and_notes] Begin get weibo creators")
-        for user_id in config.WEIBO_CREATOR_ID_LIST:
+        if not ids:
+            ids = config.WEIBO_CREATOR_ID_LIST
+        for user_id in ids:
             createor_info_res: Dict = await self.wb_client.get_creator_info_by_id(creator_id=user_id)
             if createor_info_res:
                 createor_info: Dict = createor_info_res.get("userInfo", {})

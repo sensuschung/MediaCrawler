@@ -72,30 +72,36 @@ class BilibiliCrawler(AbstractCrawler):
             if not await self.bili_client.pong():
                 login_obj = BilibiliLogin(
                     login_type=config.LOGIN_TYPE,
-                    login_phone="",  # your phone number
+                    login_phone="15957572916",  # your phone number
                     browser_context=self.browser_context,
                     context_page=self.context_page,
-                    cookie_str=config.COOKIES
+                    cookie_str=config.COOKIES["bilibili"],  # your bilibili cookies
                 )
                 await login_obj.begin()
                 await self.bili_client.update_cookies(browser_context=self.browser_context)
 
-            crawler_type_var.set(config.CRAWLER_TYPE)
-            if config.CRAWLER_TYPE == "search":
+            if type:
+                crawler_type_var.set(type)
+            else:
+                type = config.CRAWLER_TYPE
+                crawler_type_var.set(config.CRAWLER_TYPE)
+            if type == "search":
                 # Search for video and retrieve their comment information.
-                await self.search()
-            elif config.CRAWLER_TYPE == "detail":
+                await self.search(keywords)
+            elif type == "detail":
                 # Get the information and comments of the specified post
                 await self.get_specified_videos(config.BILI_SPECIFIED_ID_LIST)
-            elif config.CRAWLER_TYPE == "creator":
-                for creator_id in config.BILI_CREATOR_ID_LIST:
+            elif type == "creator":
+                if not id:
+                    id = config.BILI_CREATOR_ID_LIST
+                for creator_id in id:
                     await self.get_creator_videos(int(creator_id))
             else:
                 pass
             utils.logger.info(
                 "[BilibiliCrawler.start] Bilibili Crawler finished ...")
 
-    async def search(self):
+    async def search(self,keywords:str):
         """
         search bilibili video with keywords
         :return:
@@ -106,7 +112,9 @@ class BilibiliCrawler(AbstractCrawler):
         if config.CRAWLER_MAX_NOTES_COUNT < bili_limit_count:
             config.CRAWLER_MAX_NOTES_COUNT = bili_limit_count
         start_page = config.START_PAGE  # start page number
-        for keyword in config.KEYWORDS.split(","):
+        if not keywords:
+            keywords = config.KEYWORDS
+        for keyword in keywords.split(","):
             source_keyword_var.set(keyword)
             utils.logger.info(
                 f"[BilibiliCrawler.search] Current search keyword: {keyword}")

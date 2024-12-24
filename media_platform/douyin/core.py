@@ -64,33 +64,38 @@ class DouYinCrawler(AbstractCrawler):
             if not await self.dy_client.pong(browser_context=self.browser_context):
                 login_obj = DouYinLogin(
                     login_type=config.LOGIN_TYPE,
-                    login_phone="",  # you phone number
+                    login_phone="15957572916",  # you phone number
                     browser_context=self.browser_context,
                     context_page=self.context_page,
-                    cookie_str=config.COOKIES
+                    cookie_str=config.COOKIES["douyin"],
                 )
                 await login_obj.begin()
                 await self.dy_client.update_cookies(browser_context=self.browser_context)
-            crawler_type_var.set(config.CRAWLER_TYPE)
-            if config.CRAWLER_TYPE == "search":
+            if type:
+                crawler_type_var.set(type)
+            else:
+                crawler_type_var.set(config.CRAWLER_TYPE)
+            if type == "search":
                 # Search for notes and retrieve their comment information.
-                await self.search()
-            elif config.CRAWLER_TYPE == "detail":
+                await self.search(keywords)
+            elif type == "detail":
                 # Get the information and comments of the specified post
                 await self.get_specified_awemes()
-            elif config.CRAWLER_TYPE == "creator":
+            elif type == "creator":
                 # Get the information and comments of the specified creator
-                await self.get_creators_and_videos()
+                await self.get_creators_and_videos(id)
 
             utils.logger.info("[DouYinCrawler.start] Douyin Crawler finished ...")
 
-    async def search(self) -> None:
+    async def search(self,keywords:str) -> None:
         utils.logger.info("[DouYinCrawler.search] Begin search douyin keywords")
         dy_limit_count = 10  # douyin limit page fixed value
         if config.CRAWLER_MAX_NOTES_COUNT < dy_limit_count:
             config.CRAWLER_MAX_NOTES_COUNT = dy_limit_count
         start_page = config.START_PAGE  # start page number
-        for keyword in config.KEYWORDS.split(","):
+        if not keywords:
+            keywords = config.KEYWORDS
+        for keyword in keywords.split(","):
             source_keyword_var.set(keyword)
             utils.logger.info(f"[DouYinCrawler.search] Current keyword: {keyword}")
             aweme_list: List[str] = []
@@ -187,12 +192,14 @@ class DouYinCrawler(AbstractCrawler):
             except DataFetchError as e:
                 utils.logger.error(f"[DouYinCrawler.get_comments] aweme_id: {aweme_id} get comments failed, error: {e}")
 
-    async def get_creators_and_videos(self) -> None:
+    async def get_creators_and_videos(self,user_ids) -> None:
         """
         Get the information and videos of the specified creator
         """
         utils.logger.info("[DouYinCrawler.get_creators_and_videos] Begin get douyin creators")
-        for user_id in config.DY_CREATOR_ID_LIST:
+        if not user_ids:
+            user_ids = config.DY_CREATOR_ID_LIST
+        for user_id in user_ids:
             creator_info: Dict = await self.dy_client.get_user_info(user_id)
             if creator_info:
                 await douyin_store.save_creator(user_id, creator=creator_info)

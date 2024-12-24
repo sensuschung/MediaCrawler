@@ -106,6 +106,7 @@ class ZhiHuLogin(AbstractLogin):
     async def login_by_cookies(self):
         """login zhihu website by cookies"""
         utils.logger.info("[ZhiHu.login_by_cookies] Begin login zhihu by cookie ...")
+        # print(self.cookie_str)
         for key, value in utils.convert_str_cookie_to_dict(self.cookie_str).items():
             await self.browser_context.add_cookies([{
                 'name': key,
